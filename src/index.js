@@ -6,8 +6,13 @@ const authMiddleware = require('./middleware/auth.middleware');
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Configuração do CORS
+app.use(cors({
+    origin: process.env.URL_FRONTEND,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 // Middleware de autenticação para todas as rotas
