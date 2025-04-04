@@ -10,19 +10,24 @@ function validateCliente(cliente) {
         errors.push('Nome é obrigatório');
     }
     
-    if (!cliente.email) {
-        errors.push('Email é obrigatório');
+    if (!cliente.codigo_crm) {
+        errors.push('Código CRM é obrigatório');
     }
     
-    if (!cliente.telefone) {
-        errors.push('Telefone é obrigatório');
+    if (cliente.email && !isValidEmail(cliente.email)) {
+        errors.push('Email inválido');
     }
     
-    if (!cliente.status || !['ativo', 'inativo'].includes(cliente.status)) {
+    if (cliente.status && !['ativo', 'inativo'].includes(cliente.status)) {
         errors.push('Status inválido');
     }
     
     return errors;
+}
+
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
 }
 
 // Listar todos os clientes
@@ -31,7 +36,7 @@ router.get('/', async (req, res) => {
         const { data, error } = await supabase
             .from('clientes')
             .select('*')
-            .order('nome');
+            .order('codigo');
             
         if (error) throw error;
         
@@ -76,9 +81,10 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const cliente = {
+            codigo_crm: req.body.codigo_crm,
             nome: req.body.nome,
-            email: req.body.email,
-            telefone: req.body.telefone,
+            email: req.body.email || null,
+            telefone: req.body.telefone || null,
             status: req.body.status || 'ativo'
         };
         
@@ -90,11 +96,11 @@ router.post('/', async (req, res) => {
             });
         }
         
-        // Verificar se já existe um cliente com o mesmo email
+        // Verificar se já existe um cliente com o mesmo código CRM
         const { data: existingCliente, error: checkError } = await supabase
             .from('clientes')
             .select('id')
-            .eq('email', cliente.email)
+            .eq('codigo_crm', cliente.codigo_crm)
             .single();
             
         if (checkError && checkError.code !== 'PGRST116') {
@@ -104,7 +110,7 @@ router.post('/', async (req, res) => {
         if (existingCliente) {
             return res.status(400).json({
                 message: 'Cliente já existe',
-                details: 'Já existe um cliente com este email'
+                details: 'Já existe um cliente com este código CRM'
             });
         }
         
@@ -131,9 +137,10 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const cliente = {
+            codigo_crm: req.body.codigo_crm,
             nome: req.body.nome,
-            email: req.body.email,
-            telefone: req.body.telefone,
+            email: req.body.email || null,
+            telefone: req.body.telefone || null,
             status: req.body.status
         };
         
@@ -161,22 +168,22 @@ router.put('/:id', async (req, res) => {
             throw checkError;
         }
         
-        // Verificar se já existe outro cliente com o mesmo email
-        const { data: emailCheck, error: emailError } = await supabase
+        // Verificar se já existe outro cliente com o mesmo código CRM
+        const { data: crmCheck, error: crmError } = await supabase
             .from('clientes')
             .select('id')
-            .eq('email', cliente.email)
+            .eq('codigo_crm', cliente.codigo_crm)
             .neq('id', req.params.id)
             .single();
             
-        if (emailError && emailError.code !== 'PGRST116') {
-            throw emailError;
+        if (crmError && crmError.code !== 'PGRST116') {
+            throw crmError;
         }
         
-        if (emailCheck) {
+        if (crmCheck) {
             return res.status(400).json({
-                message: 'Email já existe',
-                details: 'Já existe outro cliente com este email'
+                message: 'Código CRM já existe',
+                details: 'Já existe outro cliente com este código CRM'
             });
         }
         
